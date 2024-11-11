@@ -1,24 +1,27 @@
-resource "azurerm_resource_group" "main" {
-  location = "uk-south"
-  name     = "test-rg"
-  tags     = {}
+data "azurerm_resource_group" "main" {
+  name = "test-rg"
+}
+
+data "azurerm_cognitive_account" "main" {
+  name                = "test-openai-aond"
+  resource_group_name = data.azurerm_resource_group.main.name
 }
 
 resource "azurerm_monitor_metric_alert" "main" {
   for_each = var.metric_alerts
 
-  name                     = each.value.name
-  description              = each.value.description
-  resource_group_name      = azurerm_resource_group.main.name
-  scopes                   = each.value.scopes
-  enabled                  = each.value.enabled
   auto_mitigate            = each.value.auto_mitigate
-  severity                 = each.value.severity
+  description              = each.value.description
+  enabled                  = each.value.enabled
   frequency                = each.value.frequency
-  window_size              = each.value.window_size
-  target_resource_type     = each.value.target_resource_type
-  target_resource_location = each.value.target_resource_location
+  name                     = each.value.name
+  resource_group_name      = data.azurerm_resource_group.main.name
+  scopes                   = [data.azurerm_cognitive_account.main.kind]
+  severity                 = each.value.severity
   tags                     = var.tags
+  target_resource_location = each.value.target_resource_location
+  target_resource_type     = each.value.target_resource_type
+  window_size              = each.value.window_size
 
   dynamic "criteria" {
     for_each = each.value.criteria
@@ -63,6 +66,8 @@ resource "azurerm_monitor_metric_alert" "main" {
     }
   }
   action {
-    action_group_id = each.value.action_group_id
+    action_group_id = var.action_group_id
   }
 }
+
+
